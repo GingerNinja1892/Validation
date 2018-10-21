@@ -1,149 +1,152 @@
 """
-Validates data according to characteristics describing the allowed data
+TODO:
+Add error messages
+Add date functions from 'Validation'
 """
 
-def my_round(x, n):
-    return round(x, n) if n != 0 else round(x)
+def my_round(num, digits):
+    return round(num, digits) if digits != 0 else round(num)
 
-class Data:
+class NA:
+    def __init__(self):
+        pass
+    def __repr__(self):
+        return "N/A"
+
+class Spec:
     """
-    Parent class of all data to hold characteristics so it can be verified that new data of that form abides by these parameters
-
-    PARAMETERS:
-    - type_ (type): The python type the data must be
-    - allow_na (bool): Whether or not to allow an empty value
+    Specifies the format of data
     """
 
-    def __init__(self, type_, range_ = None, allow_na = False):
+    def __init__(self, type_, allow_na=False):
 
         self.type = type_
-        self.range = range_
         self.allow_na = allow_na
 
-class IntRange(Data):
+class StrSpec(Spec):
     """
-    Hold characteristics of integer data in a range
-
-    PARAMETERS:
-    - min_ (int): The minimum value the data can be, inclusive, defaults to None (no minimum)
-    - max_ (int): The maximum value the data can be, inclusive, defaults to None (no maximum)
-    - round_digits (int/None): The number of digits to round data to before checking (None if don't round)
+    Specifies the format of a string
     """
 
-    def __init__(self, min_ = None, max_ = None, round_digits = None, allow_na = False):
+    def __init__(self, list_of_allowed, to_lower, allow_na=False):
 
-        super().__init__(int, True, allow_na)
-        self.min = min_
-        self.max = max_
-        self.round_digits = round_digits
-
-class IntList(Data):
-    """
-    Hold characteristics of integer data that can take any value from a list
-
-    PARAMETERS:
-    - allowed (list): A list of allowed values data can be
-    - round_digits (int/None): The number of digits to round data to before checking (None if don't round)
-    """
-
-    def __init__(self, allowed, round_digits = None, allow_na = False):
-
-        super().__init__(int, False, allow_na)
-        self.allowed = allowed
-        self.round_digits = round_digits
-
-class FloatRange(Data):
-    """
-    Hold characteristics of float data in a range
-
-    PARAMETERS:
-    - min_ (int): The minimum value the data can be, inclusive, defaults to None (no minimum)
-    - max_ (int): The maximum value the data can be, inclusive, defaults to None (no maximum)
-    - round_digits (int/None): The number of digits to round data to before checking (None if don't round)
-    """
-
-    def __init__(self, min_ = None, max_ = None, round_digits = None, allow_na = False):
-
-        super().__init__(float, True, allow_na)
-        self.min = min_
-        self.max = max_
-        self.round_digits = round_digits
-
-class FloatList(Data):
-    """
-    Hold characteristics of float data that can take any value from a list
-
-    PARAMETERS:
-    - allowed (list): A list of allowed values data can be
-    - round_digits (int/None): The number of digits to round data to before checking (None if don't round)
-    """
-
-    def __init__(self, allowed, round_digits = None, allow_na = False):
-
-        super().__init__(float, False, allow_na)
-        self.allowed = allowed
-        self.round_digits = round_digits
-
-class String(Data):
-    """
-    Holds characteristics of string data that can take any value from a list
-
-    PARAMETERS:
-    - allowed (list): A list of allowed values data can be
-    - to_lower (bool): Whether or not to lower the string before checking (will automatically lower allowed values too)
-    """
-
-    def __init__(self, allowed, to_lower, allow_na = False):
-
-        super().__init__(str, False, allow_na)
-        self.allowed = [item.lower() for item in allowed]
+        super().__init__(str, allow_na)
+        self.list_of_allowed = list_of_allowed
         self.to_lower = to_lower
 
-true_false = String(["true", "t", "yes", "y", "false", "f", "no", "n"], True)
-
-def validate(data, spec):
+class NumberSpec(Spec):
     """
-    Function to validate data passed as a parameter according to the 'spec'
-
-    PARAMETERS:
-    - data (any): The data to validate
-    - spec (Data): An object descending from the 'Data' class above which contains the specification of the data
+    Specifies the format of a number
     """
 
-    assert isinstance(spec, Data), "'spec' must be an object descending from the 'Data' class"
+    def __init__(self, type_override=float, round_digits=None, allow_na=False):
 
-    data = data.strip()
+        super().__init__(self, type_override, allow_na)
+        self.round_digits = round_digits
 
-    if spec.allow_na and data == "":
-        return True
-    elif spec.type == str and spec.to_lower:
-        data = data.lower()
+class IntRange(NumberSpec):
+    """
+    Specifies the format of an integer in a range
+    """
+
+    def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
+
+        super().__init__(int, round_digits, allow_na)
+        self.min = min_
+        self.max = max_
+
+class IntList(NumberSpec):
+    """
+    Specifies the format of an integer from a list of allowed integers
+    """
+
+    def __init__(self, list_of_allowed, round_digits=None, allow_na=False):
+
+        super().__init__(int, round_digits, allow_na)
+        self.list_of_allowed = list_of_allowed
+
+class FloatRange(NumberSpec):
+    """
+    Specifies the format of a float in a range
+    """
+
+    def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
+
+        super().__init__(float, round_digits, allow_na)
+        self.min = min_
+        self.max = max_
+
+class FloatList(NumberSpec):
+    """
+    Specifies the format of a float from a list of allowed floats
+    """
+
+    def __init__(self, list_of_allowed, round_digits=None, allow_na=False):
+
+        super().__init__(float, round_digits, allow_na)
+        self.list_of_allowed = list_of_allowed
+
+def is_valid(value, spec):
+    """
+    Validates a parameter according to a specification
+    """
+
+    assert isinstance(spec, Spec), "param spec must be an object descending from class Spec"
+
+    if isinstance(value, str):
+        value = value.strip()
+
+        if spec.allow_na and value == "":
+            return True, NA()
 
     try:
-        data = spec.type(data)
+        value = spec.type(value)
     except ValueError:
-        return False
+        return False, value
     else:
-        if (spec.type == int or spec.type == float) and spec.round_digits is not None:
-            data = my_round(data, spec.round_digits)
+        if isinstance(spec, StrSpec) and spec.to_lower:
+            value = value.lower()
+        if isinstance(spec, NumberSpec) and spec.round_digits is not None:
+            value = my_round(value, spec.round_digits)
 
-        if spec.type == str or (spec.type == int and not spec.range) or (spec.type == float and not spec.range):
-            return data in spec.allowed
-        elif spec.type == int or spec.type == float:
+        if hasattr(spec, "list_of_allowed") and spec.list_of_allowed:
+            return value in spec.list_of_allowed, value
+
+        if isinstance(spec, (IntRange, FloatRange)):
             if spec.min is not None and spec.max is not None:
-                return spec.min <= data <= spec.max
-            elif spec.min is not None:
-                return spec.min <= data
-            elif spec.max is not None:
-                return spec.max >= data
-            else:
-                return True
+                return spec.min <= value <= spec.max, value
+            if spec.min is not None:
+                return spec.min <= value, value
+            if spec.max is not None:
+                return value <= spec.max, value
+
+    return True, value
 
 def validate_input(prompt, spec):
     """
-    Function to validate data inputted from the user according to spec it should have
-
-    PARAMETERS:
-    - prompt (str): What to display the user before the input the data
-    - spec (Data): An object descending from the 'Data' class above which contains the spec of the data
+    Validates inputs according to a specification
     """
+
+    acceptable = False
+    while not acceptable:
+        acceptable, value = is_valid(input(prompt), spec)
+        if not acceptable:
+            print(spec.error)
+
+    return value
+
+def true_false(prompt, allow_na=False):
+    """
+    Repeatedly asks the user for an input until they input a boolean-like value and converts
+    this into a boolean
+    """
+
+    value = validate_input(prompt, StrSpec(["t", "true", "f", "false", "y", "yes", "n", "no", "0", "1"], True, allow_na))
+
+    if isinstance(value, NA):
+        return None
+
+    if value == "f" or value == "false" or value == "n" or value == "no" or value == "0":
+        return False
+
+    return True
