@@ -36,7 +36,7 @@ def int_range(prompt, minimum = None, maximum = None):
                     acceptable = True
 
     elif minimum and not maximum:
-        
+
         acceptable = False
         while not acceptable:
             try:
