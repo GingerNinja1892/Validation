@@ -397,3 +397,44 @@ def date(prompt, enforce=True, form="exact", fill_0s=True):
         return "{}/{}/{}".format(month, day, year)
 
     return "{}/{}/{}".format(day, month, year)
+
+
+def time(prompt, hour_clock=24, milli_seconds=False, fill_0s=True, allow_na=False):
+    """
+    Get input from the user for an hour, minute, second and optionally milli seconds
+    """
+
+    hour_clock = assert_valid(
+        hour_clock, SpecIntList([24, 12]), "param hour_clock")
+
+    print(prompt, "\n")
+
+    hours = validate_input("Hours ({} hour clock): ".format(
+        hour_clock), SpecIntRange(1, 12, None, allow_na) if hour_clock == 12 else SpecIntRange(0, 23, allow_na))
+    if hour_clock == 12:
+        time_of_day = validate_input("AM or PM? ", SpecStr(["am", "pm"], True, allow_na))
+    minutes = validate_input("Minutes: ", SpecIntRange(0, 59, None, allow_na))
+    if milli_seconds:
+        seconds = validate_input(
+            "Seconds including decimal: ", SpecFloatRange(0, 59.999999, 6, allow_na))
+    else:
+        seconds = validate_input("Seconds: ", SpecIntRange(0, 59, None, allow_na))
+
+    if fill_0s:
+        if not isinstance(hours, NA):
+            if hours < 10:
+                hours = "0" + str(hours)
+        if not isinstance(minutes, NA):
+            if minutes < 10:
+                minutes = "0" + str(minutes)
+        if not isinstance(seconds, NA):
+            if seconds < 10:
+                seconds = "0" + str(seconds)
+    
+    to_return =  "{}:{}:{}".format(hours, minutes, seconds)
+    if hour_clock == 12 and not isinstance(time_of_day, NA):
+        to_return += " {}".format(time_of_day)
+
+    return to_return
+
+print(time("Time of murder", 24))
