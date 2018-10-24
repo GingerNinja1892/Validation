@@ -6,8 +6,6 @@ Create a specification using the class 'Spec' or a descendant of it (all start w
 
 TODO:
 Test
-Add time function
-Add datetime function
 Write better documentation including docstrings
 Write README
 Add licence, etc.
@@ -58,11 +56,11 @@ class SpecStr(Spec):
     Specifies the format of a string
 
     :param list_of_allowed: A list of allowed strings
-    :param to_lower: Whether or not to lower the string before checking
+    :param to_lower: Whether or not to lower the string before checking. Default: True
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
-    def __init__(self, list_of_allowed, to_lower, allow_na=False):
+    def __init__(self, list_of_allowed, to_lower=True, allow_na=False):
 
         assert isinstance(
             list_of_allowed, list), "param list_of_allowed must be a list"
@@ -125,8 +123,8 @@ class SpecIntRange(SpecNum):
 
     def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
 
-        assert isinstance(min_, int), "param min_ must be an integer"
-        assert isinstance(max_, int), "param max_ must be an integer"
+        assert isinstance(min_, int) or min_ is None, "param min_ must be an integer or None"
+        assert isinstance(max_, int) or max_ is None, "param max_ must be an integer or None"
 
         super().__init__(int, round_digits, allow_na)
         self.min = min_
@@ -173,8 +171,8 @@ class SpecFloatRange(SpecNum):
 
     def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
 
-        assert isinstance(min_, float), "param min_ must be a float"
-        assert isinstance(max_, float), "param max_ must be a float"
+        assert isinstance(min_, (float, int)) or min_ is None, "param min_ must be a number or None"
+        assert isinstance(max_, (float, int)) or max_ is None, "param max_ must be a number or None"
 
         super().__init__(float, round_digits, allow_na)
         self.min = min_
@@ -324,11 +322,11 @@ def true_false(prompt, allow_na=False):
     return True
 
 
-def date(prompt, enforce=True, form="exact", fill_0s=True):
+def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     """
     Get input from the user for a year, month and day
 
-    :param prompt: Message to display to the user before asking them for inputs
+    :param prompt: Message to display to the user before asking them for inputs. Default: None
     :param enforce: Whether or not to enforce valid dates. If False, will allow empty inputs. Default: True
     :param form: The form to output the date in. If 'enforce' is 'False', it is always 'exact'. Default: 'exact'. Must be one of the following:
         - 'exact': year-month-day
@@ -341,7 +339,8 @@ def date(prompt, enforce=True, form="exact", fill_0s=True):
     form = assert_valid(form, SpecStr(
         ["exact", "uk", "us", "long"], True), "param form")
 
-    print(prompt, "\n")
+    if prompt is not None:
+        print(prompt, "\n")
 
     year = validate_input("Year: ", SpecIntRange(
         None, None, None, not enforce))
@@ -354,7 +353,7 @@ def date(prompt, enforce=True, form="exact", fill_0s=True):
 
     months = ["jan", "feb", "mar", "apr", "may", "jun",
               "jul", "aug", "sep", "oct", "nov", "dec"]
-    allowed = months
+    allowed = months.copy()
     allowed.extend(["1", "2", "3", "4", "5", "6",
                     "7", "8", "9", "10", "11", "12"])
 
@@ -399,42 +398,84 @@ def date(prompt, enforce=True, form="exact", fill_0s=True):
     return "{}/{}/{}".format(day, month, year)
 
 
-def time(prompt, hour_clock=24, milli_seconds=False, fill_0s=True, allow_na=False):
+def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, allow_na=False):
     """
     Get input from the user for an hour, minute, second and optionally milli seconds
+
+    :param prompt: Message to display to the user before asking them for inputs. Default: None
+    :param output_hour_clock: Whether to output in 24 hour clock or in 12 hour clock with AM/PM. Default: 24
+    :param milli_seconds: Whether or not to allow more accuracy in seconds. Default: False
+    :param fill_0s: Whether or not to fill numerical times with leading 0s. Default: False
     """
 
-    hour_clock = assert_valid(
-        hour_clock, SpecIntList([24, 12]), "param hour_clock")
+    output_hour_clock = assert_valid(output_hour_clock, SpecIntList([12, 24]), "param output_hour_clock")
 
-    print(prompt, "\n")
+    if prompt is not None:
+        print(prompt, "\n")
 
-    hours = validate_input("Hours ({} hour clock): ".format(
-        hour_clock), SpecIntRange(1, 12, None, allow_na) if hour_clock == 12 else SpecIntRange(0, 23, allow_na))
-    if hour_clock == 12:
-        time_of_day = validate_input("AM or PM? ", SpecStr(["am", "pm"], True, allow_na))
-    minutes = validate_input("Minutes: ", SpecIntRange(0, 59, None, allow_na))
-    if milli_seconds:
-        seconds = validate_input(
-            "Seconds including decimal: ", SpecFloatRange(0, 59.999999, 6, allow_na))
+    input_hour_clock = validate_input("Input hour clock (12/24): ", SpecIntList([12, 24]))
+
+    if input_hour_clock == 12:
+        hours = validate_input("Hours (12 hour clock): ", SpecIntRange(1, 12, None, allow_na))
+        period = validate_input("AM or PM? ", SpecStr(["am", "pm"], True, allow_na))
+        if hours == 12:
+            hours = 0
+        if period == "pm":
+            hours += 12
     else:
-        seconds = validate_input("Seconds: ", SpecIntRange(0, 59, None, allow_na))
+        hours = validate_input("Hours (24 hour clock): ", SpecIntRange(0, 23, None, allow_na))
+
+    minutes = validate_input("Minutes: ", SpecIntRange(0, 59, None, allow_na))
+
+    if milli_seconds:
+        seconds = validate_input("Seconds including decimal: ", SpecFloatRange(0, 59.999999, 6, allow_na))
+    else:
+        seconds = validate_input("Seconds: ", SpecIntRange(0, 59, 0, allow_na))
+
+    if not isinstance(hours, NA) and output_hour_clock == 12:
+        if hours < 12:
+            period = "AM"
+        else:
+            period = "PM"
+
+        hours %= 12
+        if hours == 0:
+            hours = 12
 
     if fill_0s:
-        if not isinstance(hours, NA):
-            if hours < 10:
-                hours = "0" + str(hours)
-        if not isinstance(minutes, NA):
-            if minutes < 10:
-                minutes = "0" + str(minutes)
-        if not isinstance(seconds, NA):
-            if seconds < 10:
-                seconds = "0" + str(seconds)
-    
-    to_return =  "{}:{}:{}".format(hours, minutes, seconds)
-    if hour_clock == 12 and not isinstance(time_of_day, NA):
-        to_return += " {}".format(time_of_day)
+        if not isinstance(hours, NA) and hours < 10:
+            hours = "0" + str(hours)
+        if not isinstance(minutes, NA) and minutes < 10:
+            minutes = "0" + str(minutes)
+        if not isinstance(seconds, NA) and seconds < 10:
+            seconds = "0" + str(seconds)
+
+    to_return = "{}:{}:{}".format(hours, minutes, seconds)
+
+    if output_hour_clock == 12:
+        to_return += " {}".format(period)
 
     return to_return
 
-print(time("Time of murder", 24))
+def datetime(prompt=None, enforce=True, form="exact", milli_seconds=False, fill_0s=True):
+    """
+    Get input from the user for a year, month, day, hours, minutes and seconds
+
+    :param prompt: Message to display to the user before asking them for inputs. Default: None
+    :param enforce: Whether or not to enforce valid dates. If False, will allow empty inputs. Default: True
+    :param form: The form to output the datetime in. Default: exact
+        - 'exact': year-month-day hour_in_24_hour_clock:minute:second
+        - 'long': day_with_suffix month_as_word, year hour_in_12_hour_clock:minute:second AM_or_PM
+    :param milli_seconds: Whether or not to allow more accuracy when inputting seconds. Default: False
+    :param fill_0s: Whether or not to fill numerical datetimes with leading 0s. Default: True
+    """
+
+    form = assert_valid(form, SpecStr(["exact", "long"]), "param form")
+
+    if prompt is not None:
+        print(prompt, "\n")
+
+    date_ = date(None, enforce, form, fill_0s)
+    time_ = time(None, 24 if form == "exact" else 12, milli_seconds, fill_0s, not enforce)
+
+    return "{} {}".format(date_, time_)
