@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+debug.log
+.~lock.*
+*.exe
+~$*
+~*.tmp

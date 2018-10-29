@@ -1,27 +1,49 @@
 # [Validation](https://github.com/GingerNinja1892/Validation) by James Wilson AKA [GingerNinja1892](https://github.com/GingerNinja1892)
 
 ## Summary
-Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the value must be.
+Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
 
 ## Normal Use
-Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'assert_valid' or 'validate_input'
+Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'assert_valid' or 'validate_input' as explained below.
 
-## Functionality
-* __is_valid__: returns whether or not a parameter is valid according to a specification
-* __assert_valid__: Throws an assertion error if a parameter is not valid according to a specification
-* __validate_input__: Repeatedly asks the user for input until their input is valid according to a specification
-* __true_false__: A variant of 'validate_input', repeatedly asks the user for input until they input a boolean-like value and then converts it into this boolean value
-* __date__: Gets the user to input a year, month and day
-* __time__: Gets the user to input an hour, minute, second and optionally parts of a second
-* __datetime__: Gets the user to input a year, month, day, hour, minute, second and optionally parts of a second
+## Functions
+The following only explains the purpose of the functions, docstrings attached to the functions themselves explain the parameters and returns in detail
 
-## Spec classes
-Used for creating specifications for use in functions to validate
+### is_valid
+Return whether or not a parameter is valid according to a specification
 
-* __Spec__: Specifies the format of data in general
-* __SpecStr__: Specifies the format of a string
-* __SpecNum__: Specifies the format of a number
-* __SpecIntRange__: Specifies the format of an integer in a range
-* __SpecIntList__: Specifies the format of an integer from a list of allowed integers
-* __SpecFloatRange__: Specifies the format of a float in a range
-* __SpecFloatList__: Specifies the format of a float from a list of allowed floats
+### validate_input
+Repeatedly asks the user for input until their input is valid according to a specification
+
+### assert_valid
+Throw an assertion error if a parameter is not valid according to a specification, otherwise return it
+
+### true_false
+A variant of 'validate_input', repeatedly asks the user for input until they input a boolean-like value and then converts it into this boolean value
+
+### date
+Gets the user to input a year, month and day and formats it in the desired way
+
+### time
+Gets the user to input an hour, minute, second and optionally parts of a second and formats it in the desired way
+
+### datetime
+Gets the user to input a year, month, day, hour, minute, second and optionally parts of a second and formats it in the desired way
+
+## Specifications
+Used for creating specifications detailing the format the data is required in for use in functions to validate
+
+### Spec
+Specifies the format of data in general. Records the datatype of the data and whether or not to allow the absence of a value.
+
+### SpecStr
+Specifies the format of a string. Records the list of allowed strings, whether or not to lower the string before checking it and whether or not to allow the absence of a value.
+
+### SpecNum
+Specifies the format of a number. Records the number of digits to round the data to before checking it, whether or not to only allow integers and whether or not to allow the absence of a value.
+
+### SpecNumRange
+Specifies the format of a number in a range. Records the minimum and maximum valid values, the number of digits to round the data to before checking it, whether or not to only allow integers and whether or not to allow the absence of a value.
+
+### SpecNumList
+Specifies the format of a number from a list of allowed numbers. Records the list of allowed numbers, the number of digits to round the data to before checking it, whether or not to only allow integers and whether or not to allow the absence of a value.

@@ -1,43 +1,40 @@
 """
 Validate inputs or parameters according to a specification containing the format required
 
-Standard use:
-Create a specification using the class 'Spec' or a descendant of it (all start with 'Spec') and pass this to either 'is_valid' to validate a parameter or 'validate_input' to validate an input or 'assert_valid' to throw an assertion error if invalid
+Normal use:
+Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'assert_valid' or 'validate_input' as explained below
 
 TODO:
 Test
-Write better documentation including docstrings
-Write README
-Add licence, etc.
+Write better README and docstrings
 Publish on PIP
 """
 
+def _round(num, digits):
+    """
+    Private rounding method which uses the built-in round function but fixes a bug.
+    If you call it with the number of digits as 0, it will round to 0 decimal places but leave as a float
+    Whereas if you call it without the number of digits, it will round to 0 decimal places but convert to an integer
+    But as I dynamically work out digits, I always provide it so I just check this and call it accordingly
+    """
 
-def _my_round(num, digits):
     return round(num, digits) if digits != 0 else round(num)
-
-
-class NA:
-    """
-    The absence of a value usually created when an empty string is input which could represent not applicable
-    """
-
-    def __init__(self):
-        pass
-
-    def __repr__(self):
-        return "N/A"
-
 
 class Spec:
     """
-    Specifies the format of data
+    Specifies the format of data in general
 
     :param type_: The datatype the data must be
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
     def __init__(self, type_, allow_na=False):
+        """
+        Specifies the format of data
+
+        :param type_: The datatype the data must be
+        :param allow_na: Whether or not to allow the absence of data. Default: False
+        """
 
         assert isinstance(type_, type), "param type_ must be a datatype"
 
@@ -50,83 +47,100 @@ class Spec:
     def __repr__(self):
         return "Spec({})".format(self.spec)
 
-
 class SpecStr(Spec):
     """
     Specifies the format of a string
 
-    :param list_of_allowed: A list of allowed strings
+    :param list_of_allowed: A list of allowed strings. None allows any. Default: None.
     :param to_lower: Whether or not to lower the string before checking. Default: True
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
-    def __init__(self, list_of_allowed, to_lower=True, allow_na=False):
+    def __init__(self, list_of_allowed=None, to_lower=True, allow_na=False):
+        """
+        Specifies the format of a string
 
-        assert isinstance(
-            list_of_allowed, list), "param list_of_allowed must be a list"
-        assert all([isinstance(item, str) for item in list_of_allowed]
-                   ), "all items in param list_of_allowed must be strings"
+        :param list_of_allowed: A list of allowed strings
+        :param to_lower: Whether or not to lower the string before checking. Default: True
+        :param allow_na: Whether or not to allow the absence of data. Default: False
+        """
+
+        assert isinstance(list_of_allowed, list) or list_of_allowed is None, "param list_of_allowed must be a list or None"
+        if list_of_allowed is not None:
+            assert all([isinstance(item, str) for item in list_of_allowed]), "all items in param list_of_allowed must be strings"
 
         super().__init__(str, allow_na)
-        self.list_of_allowed = [
-            item.lower() for item in list_of_allowed] if to_lower else list_of_allowed
+        self.list_of_allowed = [item.lower() for item in list_of_allowed] if to_lower and list_of_allowed is not None else list_of_allowed
         self.to_lower = to_lower
 
-        if to_lower:
-            self.spec += " and once converted to lower case, must be one of the following: "
-        else:
-            self.spec += " and must be one of the following: "
+        if list_of_allowed is not None:
+            if to_lower:
+                self.spec += " and once converted to lower case, must be one of the following: "
+            else:
+                self.spec += " and must be one of the following: "
 
-        self.spec += ", ".join(["'{}'".format(item)
-                                for item in list_of_allowed])
-
+            self.spec += ", ".join(["'{}'".format(item) for item in list_of_allowed])
 
 class SpecNum(Spec):
     """
     Specifies the format of a number
 
-    :param type_: The type the data must be. Float allows any number. Default: float
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: None
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
-    def __init__(self, type_=float, round_digits=None, allow_na=False):
+    def __init__(self, round_digits=None, restrict_to_int=False, allow_na=False):
+        """
+        Specifies the format of a number
 
-        assert round_digits is None or isinstance(
-            round_digits, int), "param round_digits must be an integer or None"
+        :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param allow_na: Whether or not to allow the absence of data. Default: False
+        """
 
-        super().__init__(type_, allow_na)
+        assert round_digits is None or isinstance(round_digits, int), "param round_digits must be an integer or None"
+
+        super().__init__(int if restrict_to_int else float, allow_na)
         self.round_digits = round_digits
 
-        if type_ == int:
+        if restrict_to_int:
             self.spec = "Must be an integer"
         else:
             self.spec = "Must be a number"
 
         if round_digits is not None:
-            self.spec = "Once rounded to {} decimal places, m".format(
-                round_digits) + self.spec[1:]
+            self.spec = "Once rounded to {} decimal places, m".format(round_digits) + self.spec[1:]
 
         if allow_na:
             self.spec += " or leave blank"
 
-
-class SpecIntRange(SpecNum):
+class SpecNumRange(SpecNum):
     """
-    Specifies the format of an integer in a range
+    Specifies the format of a number in a range
 
-    :param min_: The minimum valid value
-    :param max_: The maximum valid value
+    :param min_: The minimum valid value. None means there is no minimum. Default: None
+    :param max_: The maximum valid value. None means there is no maximum. Default: None
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: None
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
-    def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
+    def __init__(self, min_=None, max_=None, round_digits=None, restrict_to_int=False, allow_na=False):
+        """
+        Specifies the format of a number in a range
 
-        assert isinstance(min_, int) or min_ is None, "param min_ must be an integer or None"
-        assert isinstance(max_, int) or max_ is None, "param max_ must be an integer or None"
+        :param min_: The minimum valid value. None means there is no minimum. Default: None
+        :param max_: The maximum valid value. None means there is no maximum. Default: None
+        :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param allow_na: Whether or not to allow the absence of data. Default: False
+        """
 
-        super().__init__(int, round_digits, allow_na)
+        assert isinstance(min_, (int, float)) or min_ is None, "param min_ must be a number or None"
+        assert isinstance(max_, (int, float)) or max_ is None, "param max_ must be a number or None"
+
+        super().__init__(round_digits, restrict_to_int, allow_na)
         self.min = min_
         self.max = max_
 
@@ -135,77 +149,33 @@ class SpecIntRange(SpecNum):
         if max_ is not None:
             self.spec += ", maximum {}".format(max_)
 
-
-class SpecIntList(SpecNum):
+class SpecNumList(SpecNum):
     """
-    Specifies the format of an integer from a list of allowed integers
+    Specifies the format of a number from a list of allowed numbers
 
-    :param list_of_allowed: A list of allowed integers
+    :param list_of_allowed: A list of allowed numbers
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: None
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
-    def __init__(self, list_of_allowed, round_digits=None, allow_na=False):
+    def __init__(self, list_of_allowed, round_digits=None, restrict_to_int=False, allow_na=False):
+        """
+        Specifies the format of a number from a list of allowed numbers
 
-        assert isinstance(
-            list_of_allowed, list), "param list_of_allowed must be a list"
-        assert all([isinstance(item, int) for item in list_of_allowed]
-                   ), "all items in param list_of_allowed must be integers"
+        :param list_of_allowed: A list of allowed numbers
+        :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param allow_na: Whether or not to allow the absence of data. Default: False
+        """
 
-        super().__init__(int, round_digits, allow_na)
+        assert isinstance(list_of_allowed, (list, tuple)), "param list_of_allowed must be a list or tuple"
+        assert all([isinstance(item, int if restrict_to_int else (int, float)) for item in list_of_allowed]), "all items in param list_of_allowed must be numbers"
+
+        super().__init__(round_digits, restrict_to_int, allow_na)
         self.list_of_allowed = list_of_allowed
 
-        self.spec += " that is one of the following: " + \
-            ", ".join(["'{}'".format(item) for item in list_of_allowed])
-
-
-class SpecFloatRange(SpecNum):
-    """
-    Specifies the format of a float in a range
-
-    :param min_: The minimum valid value
-    :param max_: The maximum valid value
-    :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-    :param allow_na: Whether or not to allow the absence of data. Default: False
-    """
-
-    def __init__(self, min_=None, max_=None, round_digits=None, allow_na=False):
-
-        assert isinstance(min_, (float, int)) or min_ is None, "param min_ must be a number or None"
-        assert isinstance(max_, (float, int)) or max_ is None, "param max_ must be a number or None"
-
-        super().__init__(float, round_digits, allow_na)
-        self.min = min_
-        self.max = max_
-
-        if min_ is not None:
-            self.spec += ", minimum {}".format(min_)
-        if max_ is not None:
-            self.spec += ", maximum {}".format(max_)
-
-
-class SpecFloatList(SpecNum):
-    """
-    Specifies the format of a float from a list of allowed floats
-
-    :param list_of_allowed: A list of allowed floats
-    :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-    :param allow_na: Whether or not to allow the absence of data. Default: False
-    """
-
-    def __init__(self, list_of_allowed, round_digits=None, allow_na=False):
-
-        assert isinstance(
-            list_of_allowed, list), "param list_of_allowed must be a list"
-        assert all([isinstance(item, float) for item in list_of_allowed]
-                   ), "all items in param list_of_allowed must be floats"
-
-        super().__init__(float, round_digits, allow_na)
-        self.list_of_allowed = list_of_allowed
-
-        self.spec += " that is one of the following: " + \
-            ", ".join(["'{}'".format(item) for item in list_of_allowed])
-
+        self.spec += " that is one of the following: " + ", ".join(["'{}'".format(item) for item in list_of_allowed])
 
 def is_valid(value, spec):
     """
@@ -217,17 +187,13 @@ def is_valid(value, spec):
     :return: The value after validation (converted to the right type, lowered if applicable, etc.). This is only valid if the first return value is True.
     """
 
-    assert isinstance(
-        spec, Spec), "param spec must be an object of a 'Spec' class"
+    assert isinstance(spec, Spec), "param spec must be an object of a 'Spec' class"
 
-    if value is None and spec.allow_na:
+    if spec.allow_na and (value == "" or value is None):
         return True, None
 
     if isinstance(value, str):
         value = value.strip()
-
-        if spec.allow_na and value == "":
-            return True, NA()
 
     if isinstance(spec, SpecNum):
         # rounds before converting as if it is meant to be an int but it is a float but they have
@@ -238,7 +204,7 @@ def is_valid(value, spec):
             return False, value
         else:
             if spec.round_digits is not None:
-                value = _my_round(value, spec.round_digits)
+                value = _round(value, spec.round_digits)
 
     try:
         value = spec.type(value)
@@ -248,12 +214,12 @@ def is_valid(value, spec):
         if isinstance(spec, SpecStr) and spec.to_lower:
             value = value.lower()
         if isinstance(spec, SpecNum) and spec.round_digits is not None:
-            value = _my_round(value, spec.round_digits)
+            value = _round(value, spec.round_digits)
 
-        if hasattr(spec, "list_of_allowed") and spec.list_of_allowed:
+        if hasattr(spec, "list_of_allowed") and spec.list_of_allowed is not None:
             return value in spec.list_of_allowed, value
 
-        if isinstance(spec, (SpecIntRange, SpecFloatRange)):
+        if isinstance(spec, SpecNumRange):
             if spec.min is not None and spec.max is not None:
                 return spec.min <= value <= spec.max, value
             if spec.min is not None:
@@ -263,6 +229,22 @@ def is_valid(value, spec):
 
     return True, value
 
+def validate_input(spec, prompt=None):
+    """
+    Validate inputs from the user according to a specification - repeadly ask the user until they provide a valid response
+
+    :param prompt: The prompt to display to the user before asking them to input
+    :param spec: A descendant of the 'Spec' class, containing information on how to validate
+    :return: The valid value the user input
+    """
+
+    acceptable = False
+    while not acceptable:
+        acceptable, value = is_valid(input(prompt) if prompt is not None else input(), spec)
+        if not acceptable:
+            print(spec.spec)
+
+    return value
 
 def assert_valid(value, spec, name=None):
     """
@@ -277,31 +259,11 @@ def assert_valid(value, spec, name=None):
 
     valid, value = is_valid(value, spec)
 
-    assert valid, spec.spec if name is None else str(
-        name).strip().lower() + ": " + spec.spec
+    assert valid, spec.spec if name is None else str(name).strip().lower() + ": " + spec.spec
 
     return value
 
-
-def validate_input(prompt, spec):
-    """
-    Validate inputs from the user according to a specification - repeadly ask the user until they provide a valid response
-
-    :param prompt: The prompt to display to the user before asking them to input
-    :param spec: A descendant of the 'Spec' class, containing information on how to validate
-    :return: The valid value the user input
-    """
-
-    acceptable = False
-    while not acceptable:
-        acceptable, value = is_valid(input(prompt), spec)
-        if not acceptable:
-            print(spec.spec)
-
-    return value
-
-
-def true_false(prompt, allow_na=False):
+def true_false(prompt=None, allow_na=False):
     """
     Repeatedly asks the user for an input until they input a boolean-like value and converts this into a boolean
 
@@ -310,17 +272,15 @@ def true_false(prompt, allow_na=False):
     :return: True or False depending on the user's input or None if allow_na and they input nothing
     """
 
-    value = validate_input(prompt, SpecStr(
-        ["t", "true", "f", "false", "y", "yes", "n", "no", "0", "1"], True, allow_na))
+    value = validate_input(SpecStr(["t", "true", "f", "false", "y", "yes", "n", "no", "0", "1"], True, allow_na), prompt)
 
-    if isinstance(value, NA):
+    if value is None:
         return None
 
     if value == "f" or value == "false" or value == "n" or value == "no" or value == "0":
         return False
 
     return True
-
 
 def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     """
@@ -336,14 +296,12 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     :param fill_0s: Whether or not to fill numerical dates with leading 0s. Doesn't apply to 'long' form
     """
 
-    form = assert_valid(form, SpecStr(
-        ["exact", "uk", "us", "long"], True), "param form")
+    form = assert_valid(form, SpecStr(["exact", "uk", "us", "long"], True), "param form")
 
     if prompt is not None:
         print(prompt, "\n")
 
-    year = validate_input("Year: ", SpecIntRange(
-        None, None, None, not enforce))
+    year = validate_input(SpecNumRange(None, None, None, True, not enforce), "Year: ")
 
     if enforce:
         if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
@@ -351,13 +309,11 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
         else:
             leap_year = False
 
-    months = ["jan", "feb", "mar", "apr", "may", "jun",
-              "jul", "aug", "sep", "oct", "nov", "dec"]
+    months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
     allowed = months.copy()
-    allowed.extend(["1", "2", "3", "4", "5", "6",
-                    "7", "8", "9", "10", "11", "12"])
+    allowed.extend(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
 
-    month = validate_input("Month: ", SpecStr(allowed, True, not enforce))
+    month = validate_input(SpecStr(allowed, True, not enforce), "Month: ")
     if month in months:
         month = months.index(month) + 1
     elif month in allowed:
@@ -368,8 +324,7 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
         30 if month == 4 or month == 6 or month == 9 or month == 11 else \
         31
 
-    day = validate_input("Date (day): ", SpecIntRange(
-        1, days, None, not enforce))
+    day = validate_input(SpecNumRange(1, days, None, True, not enforce), "Date (day): ")
 
     if enforce:
         form = "exact"
@@ -378,12 +333,11 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
 
         suffix = "st" if day % 10 == 1 else "nd" if day % 10 == 2 else "rd" if day % 10 == 3 else "th"
         month = months[month - 1]
-        month = "".join([month[i].upper() if i == 0 else month[i]
-                         for i in range(len(month))])
+        month = "".join([month[i].upper() if i == 0 else month[i] for i in range(len(month))])
 
         return "{}{} {}, {}".format(day, suffix, month, year)
 
-    if fill_0s and not isinstance(month, NA) and not isinstance(day, NA):
+    if fill_0s and month is not None and day is not None:
         if month < 10:
             month = "0" + str(month)
         if day < 10:
@@ -397,7 +351,6 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
 
     return "{}/{}/{}".format(day, month, year)
 
-
 def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, allow_na=False):
     """
     Get input from the user for an hour, minute, second and optionally milli seconds
@@ -408,31 +361,31 @@ def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, a
     :param fill_0s: Whether or not to fill numerical times with leading 0s. Default: False
     """
 
-    output_hour_clock = assert_valid(output_hour_clock, SpecIntList([12, 24]), "param output_hour_clock")
+    output_hour_clock = assert_valid(output_hour_clock, SpecNumList([12, 24], None, True), "param output_hour_clock")
 
     if prompt is not None:
         print(prompt, "\n")
 
-    input_hour_clock = validate_input("Input hour clock (12/24): ", SpecIntList([12, 24]))
+    input_hour_clock = validate_input(SpecNumList([12, 24], None, True), "Input hour clock (12/24): ")
 
     if input_hour_clock == 12:
-        hours = validate_input("Hours (12 hour clock): ", SpecIntRange(1, 12, None, allow_na))
-        period = validate_input("AM or PM? ", SpecStr(["am", "pm"], True, allow_na))
+        hours = validate_input(SpecNumRange(1, 12, None, True, allow_na), "Hours (12 hour clock): ")
+        period = validate_input(SpecStr(["am", "pm"], True, allow_na), "AM or PM? ")
         if hours == 12:
             hours = 0
         if period == "pm":
             hours += 12
     else:
-        hours = validate_input("Hours (24 hour clock): ", SpecIntRange(0, 23, None, allow_na))
+        hours = validate_input(SpecNumRange(0, 23, None, True, allow_na), "Hours (24 hour clock): ")
 
-    minutes = validate_input("Minutes: ", SpecIntRange(0, 59, None, allow_na))
+    minutes = validate_input(SpecNumRange(0, 59, None, True, allow_na), "Minutes: ")
 
     if milli_seconds:
-        seconds = validate_input("Seconds including decimal: ", SpecFloatRange(0, 59.999999, 6, allow_na))
+        seconds = validate_input(SpecNumRange(0, 59.999999, 6, False, allow_na), "Seconds including decimal: ")
     else:
-        seconds = validate_input("Seconds: ", SpecIntRange(0, 59, 0, allow_na))
+        seconds = validate_input(SpecNumRange(0, 59, 0, True, allow_na), "Seconds: ")
 
-    if not isinstance(hours, NA) and output_hour_clock == 12:
+    if hours is not None and output_hour_clock == 12:
         if hours < 12:
             period = "AM"
         else:
@@ -443,11 +396,11 @@ def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, a
             hours = 12
 
     if fill_0s:
-        if not isinstance(hours, NA) and hours < 10:
+        if hours is not None and hours < 10:
             hours = "0" + str(hours)
-        if not isinstance(minutes, NA) and minutes < 10:
+        if minutes is not None and minutes < 10:
             minutes = "0" + str(minutes)
-        if not isinstance(seconds, NA) and seconds < 10:
+        if seconds is not None and seconds < 10:
             seconds = "0" + str(seconds)
 
     to_return = "{}:{}:{}".format(hours, minutes, seconds)
