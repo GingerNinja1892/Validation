@@ -1,8 +1,8 @@
 """
-Validate inputs or parameters according to a specification containing the format required
+Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
 
 Normal use:
-Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'assert_valid' or 'validate_input' as explained below
+Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'validate_input' or 'assert_valid' as explained below
 
 TODO:
 Test
@@ -12,10 +12,11 @@ Publish on PIP
 
 def _round(num, digits):
     """
-    Private rounding method which uses the built-in round function but fixes a bug.
-    If you call it with the number of digits as 0, it will round to 0 decimal places but leave as a float
+    Private rounding method which uses the built-in round function but fixes a problem:
+    If you call it with the number of digits as 0, it will round to 0 decimal places but leave as a float (so it has a .0 at the end)
     Whereas if you call it without the number of digits, it will round to 0 decimal places but convert to an integer
-    But as I dynamically work out digits, I always provide it so I just check this and call it accordingly
+    But as I dynamically work out digits, I always provide the number of digits even if it is 0 and if it is 0, I want it to be an int
+    So I just check this and call it accordingly
     """
 
     return round(num, digits) if digits != 0 else round(num)
@@ -40,12 +41,12 @@ class Spec:
 
         self.type = type_
         self.allow_na = allow_na
-        self.spec = "Must be type {}".format(str(type_)[8:-2])
+        self.msg = "Must be type {}".format(str(type_)[8:-2])
         if allow_na:
-            self.spec += " or leave blank"
+            self.msg += " or leave blank"
 
     def __repr__(self):
-        return "Spec({})".format(self.spec)
+        return "Spec({})".format(self.msg)
 
 class SpecStr(Spec):
     """
@@ -75,11 +76,11 @@ class SpecStr(Spec):
 
         if list_of_allowed is not None:
             if to_lower:
-                self.spec += " and once converted to lower case, must be one of the following: "
+                self.msg += " and once converted to lower case, must be one of the following: "
             else:
-                self.spec += " and must be one of the following: "
+                self.msg += " and must be one of the following: "
 
-            self.spec += ", ".join(["'{}'".format(item) for item in list_of_allowed])
+            self.msg += ", ".join(["'{}'".format(item) for item in list_of_allowed])
 
 class SpecNum(Spec):
     """
@@ -105,15 +106,15 @@ class SpecNum(Spec):
         self.round_digits = round_digits
 
         if restrict_to_int:
-            self.spec = "Must be an integer"
+            self.msg = "Must be an integer"
         else:
-            self.spec = "Must be a number"
+            self.msg = "Must be a number"
 
         if round_digits is not None:
-            self.spec = "Once rounded to {} decimal places, m".format(round_digits) + self.spec[1:]
+            self.msg = "Once rounded to {} decimal places, m".format(round_digits) + self.msg[1:]
 
         if allow_na:
-            self.spec += " or leave blank"
+            self.msg += " or leave blank"
 
 class SpecNumRange(SpecNum):
     """
@@ -145,9 +146,9 @@ class SpecNumRange(SpecNum):
         self.max = max_
 
         if min_ is not None:
-            self.spec += ", minimum {}".format(min_)
+            self.msg += ", minimum {}".format(min_)
         if max_ is not None:
-            self.spec += ", maximum {}".format(max_)
+            self.msg += ", maximum {}".format(max_)
 
 class SpecNumList(SpecNum):
     """
@@ -175,11 +176,11 @@ class SpecNumList(SpecNum):
         super().__init__(round_digits, restrict_to_int, allow_na)
         self.list_of_allowed = list_of_allowed
 
-        self.spec += " that is one of the following: " + ", ".join(["'{}'".format(item) for item in list_of_allowed])
+        self.msg += " that is one of the following: " + ", ".join(["'{}'".format(item) for item in list_of_allowed])
 
 def is_valid(value, spec):
     """
-    Validate a parameter ('value') according to a specification ('spec') made from one of the above classes
+    Return whether or not 'value' is valid according to 'spec' and the validated 'value'
 
     :param value: The value to validate
     :param spec: A descendant of the 'Spec' class, containing information on how to validate
@@ -231,10 +232,10 @@ def is_valid(value, spec):
 
 def validate_input(spec, prompt=None):
     """
-    Validate inputs from the user according to a specification - repeadly ask the user until they provide a valid response
+    Repeatedly ask the user for input until their input is valid according to 'spec' and return their validated input
 
-    :param prompt: The prompt to display to the user before asking them to input
     :param spec: A descendant of the 'Spec' class, containing information on how to validate
+    :param prompt: The prompt to display to the user before asking them to input. None displays nothing. Default: None
     :return: The valid value the user input
     """
 
@@ -242,32 +243,31 @@ def validate_input(spec, prompt=None):
     while not acceptable:
         acceptable, value = is_valid(input(prompt) if prompt is not None else input(), spec)
         if not acceptable:
-            print(spec.spec)
+            print(spec.msg)
 
     return value
 
 def assert_valid(value, spec, name=None):
     """
-    Assert that a paramater ('value') is valid according to a specification ('spec') made from one of the above classes
-    If the message is invalid, throws an assertion error with message. If valid, returns the normalized value
+    Throw an assertion error if 'value' is invalid according to 'spec', otherwise return it
 
     :param value: The value to validate
     :param spec: A descendant of the 'Spec' class, containing information on how to validate
-    :param name: The name to reference the value so it is clear what is invalid. Default: None
+    :param name: The name to reference the value so it is clear what is invalid in error messages. None displays nothing. Default: None
     :return value: If it hasn't thrown an assertion error, returns the valid value after normalisation
     """
 
     valid, value = is_valid(value, spec)
 
-    assert valid, spec.spec if name is None else str(name).strip().lower() + ": " + spec.spec
+    assert valid, spec.msg if name is None else str(name).strip().lower() + ": " + spec.msg
 
     return value
 
 def true_false(prompt=None, allow_na=False):
     """
-    Repeatedly asks the user for an input until they input a boolean-like value and converts this into a boolean
+    Repeatedly ask the user for an input until they input a boolean-like value and return the boolean version
 
-    :param prompt: The prompt to display to the user before asking them to input
+    :param prompt: The prompt to display to the user before asking them to input. None will not display anything. Default: None
     :param allow_na: Whether or not to allow the absence of a value. Default: False
     :return: True or False depending on the user's input or None if allow_na and they input nothing
     """
@@ -284,7 +284,7 @@ def true_false(prompt=None, allow_na=False):
 
 def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     """
-    Get input from the user for a year, month and day
+    Repeatedly ask the user for a year, month and day until they input valid values and return this in a defined format
 
     :param prompt: Message to display to the user before asking them for inputs. Default: None
     :param enforce: Whether or not to enforce valid dates. If False, will allow empty inputs. Default: True
@@ -353,7 +353,7 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
 
 def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, allow_na=False):
     """
-    Get input from the user for an hour, minute, second and optionally milli seconds
+    Repeatedly ask the user to input hours, minutes and seconds until they input valid values and return this in a defined format
 
     :param prompt: Message to display to the user before asking them for inputs. Default: None
     :param output_hour_clock: Whether to output in 24 hour clock or in 12 hour clock with AM/PM. Default: 24
@@ -412,7 +412,7 @@ def time(prompt=None, output_hour_clock=24, milli_seconds=False, fill_0s=True, a
 
 def datetime(prompt=None, enforce=True, form="exact", milli_seconds=False, fill_0s=True):
     """
-    Get input from the user for a year, month, day, hours, minutes and seconds
+    Repeatedly ask the user to input a year, month, day, hours, minutes and seconds until they input valid values and return this in a defined format
 
     :param prompt: Message to display to the user before asking them for inputs. Default: None
     :param enforce: Whether or not to enforce valid dates. If False, will allow empty inputs. Default: True

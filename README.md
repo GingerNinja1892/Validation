@@ -4,31 +4,31 @@
 Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
 
 ## Normal Use
-Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'assert_valid' or 'validate_input' as explained below.
+Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'validate_input' or 'assert_valid' as explained below
 
 ## Functions
 The following only explains the purpose of the functions, docstrings attached to the functions themselves explain the parameters and returns in detail
 
 ### is_valid
-Return whether or not a parameter is valid according to a specification
+Return whether or not a parameter is valid according to a specification and the validated parameter
 
 ### validate_input
-Repeatedly asks the user for input until their input is valid according to a specification
+Repeatedly ask the user for input until their input is valid according to a specification and return their validated input
 
 ### assert_valid
 Throw an assertion error if a parameter is not valid according to a specification, otherwise return it
 
 ### true_false
-A variant of 'validate_input', repeatedly asks the user for input until they input a boolean-like value and then converts it into this boolean value
+Repeatedly ask the user for an input until they input a boolean-like value and return the boolean version
 
 ### date
-Gets the user to input a year, month and day and formats it in the desired way
+Repeatedly ask the user for a year, month and day until they input valid values and return this in a defined format
 
 ### time
-Gets the user to input an hour, minute, second and optionally parts of a second and formats it in the desired way
+Repeatedly ask the user to input hours, minutes and seconds until they input valid values and return this in a defined format
 
 ### datetime
-Gets the user to input a year, month, day, hour, minute, second and optionally parts of a second and formats it in the desired way
+Repeatedly ask the user to input a year, month, day, hours, minutes and seconds until they input valid values and return this in a defined format
 
 ## Specifications
 Used for creating specifications detailing the format the data is required in for use in functions to validate
