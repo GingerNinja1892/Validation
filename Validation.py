@@ -288,7 +288,7 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
 
     :param prompt: Message to display to the user before asking them for inputs. Default: None
     :param enforce: Whether or not to enforce valid dates. If False, will allow empty inputs. Default: True
-    :param form: The form to output the date in. If 'enforce' is 'False', it is always 'exact'. Default: 'exact'. Must be one of the following:
+    :param form: The form to output the date in. Default: 'exact'. Must be one of the following:
         - 'exact': year-month-day
         - 'uk': day/month/year
         - 'us': month/day/year
@@ -301,7 +301,7 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     if prompt is not None:
         print(prompt, "\n")
 
-    year = validate_input(SpecNumRange(None, None, None, True, not enforce), "Year: ")
+    year = validate_input(SpecNumRange(None, None, None, True, not enforce), "Year: " if enforce else "Year (can leave blank): ")
 
     if enforce:
         if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
@@ -313,21 +313,27 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
     allowed = months.copy()
     allowed.extend(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
 
-    month = validate_input(SpecStr(allowed, True, not enforce), "Month: ")
+    month = validate_input(SpecStr(allowed, True, not enforce), "Month: " if enforce else "Month (can leave blank): ")
     if month in months:
         month = months.index(month) + 1
     elif month in allowed:
         month = int(month)
 
-    days = 28 if month == 2 and not leap_year else \
-        29 if month == 2 and leap_year else \
+    days = 28 if month == 2 and (not enforce or not leap_year) else \
+        29 if month == 2 and (not enforce or leap_year) else \
         30 if month == 4 or month == 6 or month == 9 or month == 11 else \
         31
 
-    day = validate_input(SpecNumRange(1, days, None, True, not enforce), "Date (day): ")
+    day = validate_input(SpecNumRange(1, days, None, True, not enforce), "Date/day: " if enforce else "Date/day (can leave blank): ")
 
-    if enforce:
-        form = "exact"
+    if year is None:
+        year = "?"
+
+    if month is None:
+        month = "?"
+
+    if day is None:
+        day = "?"
 
     if form == "long":
 
@@ -337,7 +343,7 @@ def date(prompt=None, enforce=True, form="exact", fill_0s=True):
 
         return "{}{} {}, {}".format(day, suffix, month, year)
 
-    if fill_0s and month is not None and day is not None:
+    if fill_0s and month != "?" and day != "?":
         if month < 10:
             month = "0" + str(month)
         if day < 10:
