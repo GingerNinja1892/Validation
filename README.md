@@ -1,4 +1,4 @@
-# [Validation](https://github.com/GingerNinja1892/Validation) by James Wilson AKA [GingerNinja1892](https://github.com/GingerNinja1892)
+# [Validation](https://github.com/GingerNinja1892/Validation) by James Wilson AKA [jamesw1892](https://github.com/jamesw1892)
 
 ## Summary
 Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
