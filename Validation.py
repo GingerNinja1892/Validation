@@ -3,7 +3,6 @@ Tools for validating inputs or variables according to specifications detailing w
 
 Normal use:
 Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'validate_input' or 'assert_valid' as explained below
-
 TODO:
 Test
 Write better README and docstrings
@@ -253,7 +252,7 @@ def assert_valid(value, spec, name=None):
 
     :param value: The value to validate
     :param spec: A descendant of the 'Spec' class, containing information on how to validate
-    :param name: The name to reference the value so it is clear what is invalid in error messages. None displays nothing. Default: None
+    :param name: The name to reference the value so it is clear what is invalid in error messages. None just displays the error message. Default: None
     :return value: If it hasn't thrown an assertion error, returns the valid value after normalisation
     """
 
