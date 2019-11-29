@@ -1,12 +1,5 @@
 """
 Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
-
-Normal use:
-Create a specification using the 'Spec' class or a descendant of it (all descendants start with 'Spec') and pass this to 'is_valid', 'validate_input' or 'assert_valid' as explained below
-TODO:
-Test
-Write better README and docstrings
-Publish on PIP
 """
 
 def _round(num, digits):
@@ -15,7 +8,7 @@ def _round(num, digits):
     If you call it with the number of digits as 0, it will round to 0 decimal places but leave as a float (so it has a .0 at the end)
     Whereas if you call it without the number of digits, it will round to 0 decimal places but convert to an integer
     But as I dynamically work out digits, I always provide the number of digits even if it is 0 and if it is 0, I want it to be an int
-    So I just check this and call it accordingly
+    So I just check this and potentially call it with no arguments accordingly
     """
 
     return round(num, digits) if digits != 0 else round(num)
@@ -86,7 +79,7 @@ class SpecNum(Spec):
     Specifies the format of a number
 
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-    :param restrict_to_int: Whether or not to only allow integers. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: False
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
@@ -95,7 +88,7 @@ class SpecNum(Spec):
         Specifies the format of a number
 
         :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: False
         :param allow_na: Whether or not to allow the absence of data. Default: False
         """
 
@@ -122,7 +115,7 @@ class SpecNumRange(SpecNum):
     :param min_: The minimum valid value. None means there is no minimum. Default: None
     :param max_: The maximum valid value. None means there is no maximum. Default: None
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-    :param restrict_to_int: Whether or not to only allow integers. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: False
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
@@ -133,7 +126,7 @@ class SpecNumRange(SpecNum):
         :param min_: The minimum valid value. None means there is no minimum. Default: None
         :param max_: The maximum valid value. None means there is no maximum. Default: None
         :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: False
         :param allow_na: Whether or not to allow the absence of data. Default: False
         """
 
@@ -155,7 +148,7 @@ class SpecNumList(SpecNum):
 
     :param list_of_allowed: A list of allowed numbers
     :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-    :param restrict_to_int: Whether or not to only allow integers. Default: None
+    :param restrict_to_int: Whether or not to only allow integers. Default: False
     :param allow_na: Whether or not to allow the absence of data. Default: False
     """
 
@@ -165,7 +158,7 @@ class SpecNumList(SpecNum):
 
         :param list_of_allowed: A list of allowed numbers
         :param round_digits: The number of digits to round to before checking. None means don't round. Default: None
-        :param restrict_to_int: Whether or not to only allow integers. Default: None
+        :param restrict_to_int: Whether or not to only allow integers. Default: False
         :param allow_na: Whether or not to allow the absence of data. Default: False
         """
 
