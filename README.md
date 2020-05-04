@@ -1,4 +1,4 @@
-# [Validation](https://github.com/jamesw1892/Validation) [jamesw1892](https://github.com/jamesw1892)
+# [Validation](https://github.com/jamesw1892/Validation) by [jamesw1892](https://github.com/jamesw1892)
 
 ## Summary
 Tools for validating inputs or variables according to specifications detailing what format, datatype, etc. the data must be.
